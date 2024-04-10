@@ -1,0 +1,341 @@
+
+package praktiskaisDarbs; // Pakotne (spēles kopējais fails mape)
+
+import javax.swing.*; // Importē bibliotēkas
+
+import java.awt.*; 
+
+import java.awt.event.*; 
+
+import java.util.*; 
+
+public class Game { // Klase "Game"
+
+    static int[] sakumaSkaitlis = new int[5];// Statiskie mainīgie
+
+    static int speletajs1Punkti = 0;
+
+    static int speletajs2Punkti = 0;
+
+    static int gameBank = 0;
+
+    static Random ran = new Random();
+ 
+    // Birkas punktu attēlošanai
+
+    static JLabel player1Label;
+
+    static JLabel player2Label;
+
+    static JLabel gameBankLabel;
+ 
+    static boolean isComputerTurn = false;
+
+    static boolean useAlphaBeta = false; // Marķieris algoritma izvēlei (vai izvēlēts alfa-beta algoritms)
+ 
+    public static void main(String[] args) {   // Galvenā metode
+
+        Game game = new Game();   // Izveido objektu
+
+        game.setupGameMode();   // Izpilda metodi
+
+    }
+ 
+    public void setupGameMode() {  // Metode spēles režīma izvēlei
+
+        String[] options = {"2 Spēlētāju spēle", "Spēlētājs pret Datoru"};  // Izvēles varianti
+
+        int choice = JOptionPane.showOptionDialog(null, "Izvēlies spēles režīmu:", "Spēles Režīms",   // Dialoga logs
+
+                JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+ 
+        if (choice == 0) {   // Ja izvēlēta pirmā opcija
+
+            playGame(false); // izpilda metodi 2 spēlētāju režīms
+
+        } else {   // Ja izvēlēta otra opcija
+
+            Object[] algorithms = {"Minimax", "Alpha-Beta"};   //atveras Izvēles varianti algoritma izvēlei
+
+            int algorithmChoice = JOptionPane.showOptionDialog(null, "Izvēlies datora algoritmu: ", "Algoritmu izvēlne",  // Dialoga loga izveide
+
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, algorithms, algorithms[0]);  
+
+            useAlphaBeta = (algorithmChoice == 1);   // Iestata marķieri alfa-beta algoritmam
+
+            playGame(true); // SPēlētājs pret datoru spēle
+
+        }
+
+    }
+ 
+    public void playGame(boolean isVsComputer) {
+
+        JFrame frame = new JFrame("KF7 Spele"); // nodefinējam Loga nosaukumu KF7
+ 
+        // Izveidojham birkas lai punktus attēlotu dažādās krāsās
+
+        player1Label = new JLabel(isVsComputer ? "Spēlētāja punkti: 0" : "1.spēlētāja punkti: 0"); // Izveidojam birku
+
+        player1Label.setForeground(Color.BLUE); // Iestata krāsu blue(zila)
+
+        player2Label = new JLabel(isVsComputer ? "Dators(AI) punkti: 0" : "2.spelētāja punkti: 0");
+
+        player2Label.setForeground(new Color(0, 100, 0));  // Iestata krāsu green (zaļa)
+
+        gameBankLabel = new JLabel("Spēles banka: 0");
+
+        gameBankLabel.setForeground(new Color(128, 0, 128));  // Iestata krāsu purple (lillā)
+ 
+        JPanel scorePanel = new JPanel(new GridLayout(3, 1)); // Izveido logus un nodefinē to izmērus
+
+        scorePanel.add(player1Label);  // Pievieno birkas logam
+        scorePanel.add(player2Label);
+        scorePanel.add(gameBankLabel);
+ 
+        frame.add(scorePanel, BorderLayout.NORTH); // nosaka to pozīciju
+ 
+ 
+        JPanel panel = new JPanel(new GridLayout(1, 5, 10, 10));   // Izveido logus
+ 
+        for (int i = 0; i < 5; i++) {  //sākam spēles noteikumu definēšanu
+
+            int number;
+
+            do {
+
+                number = ran.nextInt(10001) + 10000;  // nosakam izvēles skaitļu lielumu
+
+            } while (!(number >= 10000 && number <= 20000) || (number % 2 != 0) || (number % 3 != 0));
+ 
+            sakumaSkaitlis[i] = number;  // nodefinējam tā nosaukunmmu programmai
+ 
+            JButton button = new JButton(Integer.toString(number));  // izveidojam elementus (pogas) skaitļiem ko varēs izvēlēties
+
+            button.setPreferredSize(new Dimension(100, 50));  // pogas dimensijas
+
+            panel.add(button);  // pievienojam logam
+ 
+            final int index = i;
+
+            button.addActionListener(new ActionListener() { // pievienojam komandu, kas klausās kura poga tiks nospiesta
+
+                public void actionPerformed(ActionEvent e) {
+
+                    if (!isVsComputer || !isComputerTurn) {
+
+                        int chosenNumber = sakumaSkaitlis[index];
+
+                        playerTurn(chosenNumber, frame, isVsComputer);
+
+                    }
+
+                }
+
+            });
+
+        }
+ 
+        JButton exitButton = new JButton("Iziet");  //Izveidojam iziešanas pogu 
+
+        exitButton.addActionListener(new ActionListener() {  // atkal komanda kas klausās vai šī poga tiek nospiesta
+
+            public void actionPerformed(ActionEvent e) {  // komanda darbības izpilde
+
+                frame.dispose(); // aiztaisam logu
+
+            }
+
+        });
+ 
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));  // nosakam pogas lokāciju logā
+
+        bottomPanel.add(exitButton);   // pievienojam pogu
+ 
+        frame.add(bottomPanel, BorderLayout.SOUTH);  //pogas lokācija dienvidi(loga apakša)
+
+        frame.add(panel, BorderLayout.CENTER);   // pogas lokācija  centrēta
+
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); //nosakam pogas izmērus
+ 
+        frame.setSize(600, 300); //rāmja izmērs
+
+        frame.setVisible(true);  // padaram to redzamu
+    
+    }
+
+private void playerTurn(int prevResultingNumber, JFrame frame, boolean isVsComputer) {
+        int currentPlayer = isComputerTurn ? 2 : 1;  // Nosakam pašreizējo spēlētāju
+        int chosenNumber = prevResultingNumber;  // Nosakam izvēlēto skaitli
+
+ 
+        while (chosenNumber > 3) {  // Kamēr izvēlētais skaitlis ir lielāks par 3
+            int divisionChoice = 0;  // izvēles kaitlis (varianti)
+            if (currentPlayer == 1 || (!isVsComputer || !isComputerTurn)) {  // Ja 1. spēlētāja gājiens vai nav datora gājiens
+            	String playerLabel = isVsComputer ? "Spēlētājs" : "Spēlētājs" + currentPlayer;   // Veidojam dialoga logu
+                divisionChoice = JOptionPane.showOptionDialog(null, playerLabel + ": Izvēlies dalījumu\nIegūtais skaitlis: " + chosenNumber, "Dalījuma izvēlne",
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, new String[]{"Dalījums ar 2", "Dalījums ar 3"}, "Dalījums ar 2");
+            } else {
+            	// Ja datora gājiens (izvēlēts automātiski)
+                divisionChoice = chooseDivisionAutomatically(chosenNumber);  // Izvēlēties dalījumu automātiski 
+                JOptionPane.showMessageDialog(null, "Dators(AI) izvēlējās sadalīt " + chosenNumber + " ar " + (divisionChoice == 0 ? "2" : "3")); 
+                updateButton(chosenNumber / (divisionChoice + 2));  // Atjaunināt pogu attēlojot iegūto dalījumu
+            }
+ 
+            if (divisionChoice == 0) {   // Ja izvēlēts dalījums ar 2
+                chosenNumber /= 2;       // Izdalīt ar 2
+            } else {                     // Ja izvēlēts dalījums ar 3
+                chosenNumber /= 3;       // Izdalīt ar 3
+            }
+ 
+            if (chosenNumber % 10 == 0 || chosenNumber % 10 == 5) {   // Ja izvēlētais skaitlis beidzas ar 0 vai 5
+                gameBank++;                                           // Palielināt spēles banku
+                updateGameBankLabel();                                // Atjaunot spēles bankas birku
+
+            }
+            if (chosenNumber % 2 != 0) {    // Ja izvēlētais skaitlis nav pāra
+                if (currentPlayer == 1) {   // Ja 1. spēlētāja gājiens
+                    speletajs1Punkti--;     // Samazināt 1. spēlētāja punktus
+                    updatePlayer1Label(isVsComputer); // Atjaunot 1. spēlētāja birku
+
+                } else {                    // Ja 2. spēlētāja gājiens
+                    speletajs2Punkti--;     // Samazināt 2. spēlētāja punktus
+                    updatePlayer2Label(isVsComputer); // Atjaunot 2. spēlētāja birku
+                }
+            } else {                        // Ja izvēlētais skaitlis ir pāra
+                if (currentPlayer == 1) {   // Ja 1. spēlētāja gājiens
+                    speletajs1Punkti++;     // Palielinām 1. spēlētāja punktus
+                    updatePlayer1Label(isVsComputer);  // Atjaunot 1. spēlētāja etiķeti
+                } else {                    // Ja 2. spēlētāja gājiens
+                    speletajs2Punkti++;     // Palielinām 2. spēlētāja punktus
+                    updatePlayer2Label(isVsComputer); // Atjaunot 2. spēlētāja etiķeti
+                }
+            }
+            if (chosenNumber == 2) {            // Ja izvēlētais skaitlis ir 2
+                if (currentPlayer == 1) {       // Ja 1. spēlētāja gājiens
+                    speletajs1Punkti = speletajs1Punkti + gameBank;  // Palielinām 1. spēlētāja punktus par spēles banku
+                } else {                        // Ja 2. spēlētāja gājiens
+                    speletajs2Punkti = speletajs2Punkti + gameBank;  // Palielinām 2. spēlētāja punktus par spēles banku
+                }
+            }
+ 
+            currentPlayer = currentPlayer == 1 ? 2 : 1;   // Mainam pašreizējo spēlētāju
+            isComputerTurn = !isComputerTurn; // datora gājiens
+        }
+ 
+        displayEndGamePopup(frame, isVsComputer);   // Izpildīt metodi par spēles beigām (Pop up logs)
+    }
+ 
+    private int chooseDivisionAutomatically(int chosenNumber) {   // Metode "chooseDivisionAutomatically"  automatizēta gājiena izvēle datoram
+        if (useAlphaBeta) {                                       // Ja izvēlēts Alpha-Beta algoritms
+            int bestChoice = alphaBeta(chosenNumber, Integer.MIN_VALUE, Integer.MAX_VALUE, 3); // Atrast labāko izvēli,algoritma pārmeklēšanas dziļums 3
+            return bestChoice;   // Atgriezt labāko izvēli
+        } else {                 // Ja izvēlēts Minimax algoritms
+            int bestChoice = minimax(chosenNumber, 0, true, 3); // Atrast labāko izvēli,algoritma pārmeklēšanas dziļums 3
+            return bestChoice;   // Atgriezt labāko izvēli
+        }
+    }
+ 
+    private int minimax(int chosenNumber, int depth, boolean isMaximizingPlayer, int maxDepth) {    // Metode "minimax"
+        if (chosenNumber <= 3 || depth >= maxDepth) { // Ja izvēlētais skaitlis ir mazāks vai vienāds ar 3 vai sasniegts maksimālais dziļums
+            return chosenNumber % 3 == 0 ? 1 : 0;     // Atgriezt punktu skaitu
+        }
+ 
+        if (isMaximizingPlayer) {                // Ja maksimizējošais spēlētājs
+            int bestScore = Integer.MIN_VALUE;   // Maksimālais punktu skaits
+            for (int i = 2; i >= 1; i--) {       // Katram iespējamajam dalījumam
+                int result = minimax(chosenNumber / i, depth + 1, false, maxDepth);  // Atgriezt minimax vērtību
+                bestScore = Math.max(bestScore, result);   // Atjaunot maksimālo punktu skaitu
+            }
+            return bestScore;   // Atgriezt maksimālo punktu skaitu
+        } else {                // Ja minimizējošais spēlētājs
+            int bestScore = Integer.MAX_VALUE; // Minimālais punktu skaits
+            for (int i = 2; i >= 1; i--) {     // Katram iespējamajam dalījumam
+                int result = minimax(chosenNumber / i, depth + 1, true, maxDepth); // Atgriezt minimax vērtību
+                bestScore = Math.min(bestScore, result);    // nosaka minimālo punktu skaitu
+            }
+            return bestScore;   // Atgriezt minimālo punktu skaitu
+        }
+    }
+ 
+    private int alphaBeta(int chosenNumber, int alpha, int beta, int depth) {   // Metode "alphaBeta"
+        if (chosenNumber <= 3 || depth == 0) {                                  // Ja izvēlētais skaitlis ir mazāks vai vienāds ar 3 vai sasniegts maksimālais dziļums
+            return chosenNumber % 3 == 0 ? 1 : 0;                               // Atgriezt punktu skaitu
+        }
+ 
+        if (isComputerTurn) {               // Ja datora gājiens
+            for (int i = 2; i >= 1; i--) {  // Katram iespējamajam dalījumam
+                alpha = Math.max(alpha, alphaBeta(chosenNumber / i, alpha, beta, depth - 1));  // Atjaunot alfa vērtību
+                if (beta <= alpha) {   // Ja beta ir mazāks vai vienāds ar alfa
+                    break;   // Izejam no cikla
+                }
+            }
+            return alpha;    // Atgeriežam alfa vērtību
+        } else {             // Ja spēlētāja gājiens
+            for (int i = 2; i >= 1; i--) {  // Katram iespējamajam dalījumam
+                beta = Math.min(beta, alphaBeta(chosenNumber / i, alpha, beta, depth - 1));  // Atjaunot beta vērtību
+                if (beta <= alpha) {    // Ja beta ir mazāks vai vienāds ar alfa
+                    break;              // Izejam no cikla
+                }
+            }
+            return beta;   // Atgriezt beta vērtību
+        }
+    }
+ 
+    private void updateButton(int chosenNumber) {   // Metode "updateButton"
+         sakumaSkaitlis[0] = chosenNumber;          // Atjaunot pirmās pogas tekstu
+    }
+ 
+    private void displayEndGamePopup(JFrame frame, boolean isVsComputer) { // Metode "displayEndGamePopup" (pēdējā popup attēļošana)
+        String winner;    // Uzvarētājs
+        if (speletajs1Punkti > speletajs2Punkti) {  // Ja 1. spēlētājs ir uzvarējis
+            winner = "1.spēlētājs";                 //Iestata uzvarētāju
+        } else if (speletajs2Punkti > speletajs1Punkti) {  // Ja 2. spēlētājs ir uzvarējis
+            winner = isVsComputer ? "Dators(AI)" : "2.spēlētājs"; //pārbauda lai birkas ir pareizas
+        } else {                     // Ja ir neizšķirts
+            winner = "Neizšķirts";   // Iestata uzvarētāju (neizšķits)
+        }
+ 
+        String winnerText = "<html><font color='red' size='+2'><b>" + (winner.equals("Neizšķirts") ? "Neizšķirts" : winner + " Uzvara!") + "</b></font></html>";   // Uzvarētāja teksts
+        String playerLabel = isVsComputer ? "Spēlētājs" : "1.spēlētājs"; // Spēlētāja birka
+        int option = JOptionPane.showConfirmDialog(frame, "<html>Spēle beigusies!<br><b>" + playerLabel + " punkti:</b> " + speletajs1Punkti + "<br><b>" + (isVsComputer ? "Dators(AI)" : "2.spēlētājs") + " Punkti:</b> " + speletajs2Punkti + "<br><b>Spēles bankas iegūtie punkti:</b> " + gameBank + "<br><br>" + winnerText + "</html>\nUzspēlet vēlreiz?", "End Game", JOptionPane.YES_NO_OPTION);   // Dialoga logs ar izvēlni 
+        
+        if (option == JOptionPane.YES_OPTION) {   // Ja nospiež "Jā"
+            resetGame(); // Atiestata spēli atgriežot to sākuma stāvoklī
+            frame.dispose();   // Iziet no loga
+            playGame(isVsComputer);   // Izpilda metodi
+        } else {    // Ja nospiež "Nē"
+            frame.dispose();    // Iziet no loga
+        }
+    }
+ 
+ 
+    
+    private void resetGame() {   // Metode "resetGame"
+        speletajs1Punkti = 0;    // Atiestata 1.spēlētājam punktus
+        speletajs2Punkti = 0;    // Atiestata 2.spēlētājam punktus
+        gameBank = 0;            // Atiestata bankas punktus
+        isComputerTurn = false;  // Atiestata datora gājienu
+    }
+ 
+   
+    private void updatePlayer1Label(boolean isVsComputer) {                  // Metode "updatePlayer1Label"
+        if (isVsComputer) {                                                  // Ja spēlē pret datoru
+            player1Label.setText("Spēlētāja punkti: " + speletajs1Punkti);   // Atjaunot birku
+        } else {                                                             // Ja spēlē pret otru spēlētāju
+            player1Label.setText("1.spēlētāja punkti: " + speletajs1Punkti); // Atjaunot etiķeti
+        }
+    }
+ 
+    private void updatePlayer2Label(boolean isVsComputer) {                      // Metode "updatePlayer2Label"
+    	 if (isVsComputer) {                                                     // Ja spēlē pret datoru
+    	        player2Label.setText("Dators(AI) punkti: " + speletajs2Punkti);  // Atjaunot etiķeti
+    	    } else {                                                             // Ja spēlē pret otru spēlētāju
+    	        player2Label.setText("2.spēlētāja punkti: " + speletajs2Punkti); // Atjaunot etiķeti
+    	    }
+    }
+ 
+    private void updateGameBankLabel() {                                         // Metode "updateGameBankLabel"
+        gameBankLabel.setText("Spēles banka: " + gameBank);                      // Atjaunot spēles bankas etiķeti
+    }
+}
